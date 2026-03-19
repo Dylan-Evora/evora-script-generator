@@ -351,7 +351,9 @@ async function callEdgeFunction(action, adjustFeedback) {
     if (parsed) {
       renderScripts(parsed);
     } else {
-      // Not JSON — show as formatted text (conversational response)
+      // Show raw but add a note about parse failure
+      console.error('JSON parse failed. First 200 chars:', fullText.slice(0, 200));
+      console.error('Last 200 chars:', fullText.slice(-200));
       output.innerHTML = `<div class="raw-output">${escHtml(fullText)}</div>`;
     }
 
@@ -396,37 +398,73 @@ document.getElementById('adjust-input').addEventListener('keydown', (e) => {
 function tryParseScriptJSON(text) {
   if (!text) return null;
   
-  // Try these extraction strategies in order
+  // Strip markdown code fences first
+  let cleaned = text.trim();
+  const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) cleaned = fenceMatch[1].trim();
+
   const strategies = [
     // 1. Direct parse
-    () => JSON.parse(text.trim()),
-    // 2. Extract from ```json ... ```
+    () => JSON.parse(cleaned),
+    // 2. First { to last }
     () => {
-      const m = text.match(/```json\s*([\s\S]*?)```/);
-      return m ? JSON.parse(m[1].trim()) : null;
-    },
-    // 3. Extract from ``` ... ```
-    () => {
-      const m = text.match(/```\s*([\s\S]*?)```/);
-      return m ? JSON.parse(m[1].trim()) : null;
-    },
-    // 4. Find first { to last }
-    () => {
-      const start = text.indexOf('{');
-      const end = text.lastIndexOf('}');
-      if (start >= 0 && end > start) return JSON.parse(text.slice(start, end + 1));
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start >= 0 && end > start) return JSON.parse(cleaned.slice(start, end + 1));
       return null;
     },
-    // 5. Find first [ to last ]
+    // 3. First [ to last ]
     () => {
-      const start = text.indexOf('[');
-      const end = text.lastIndexOf(']');
-      if (start >= 0 && end > start) {
-        const arr = JSON.parse(text.slice(start, end + 1));
-        return { scripts: arr };
+      const start = cleaned.indexOf('[');
+      const end = cleaned.lastIndexOf(']');
+      if (start >= 0 && end > start) return { scripts: JSON.parse(cleaned.slice(start, end + 1)) };
+      return null;
+    },
+    // 4. Repair common JSON errors: trailing commas, unescaped newlines
+    () => {
+      let s = cleaned;
+      const start = s.indexOf('{');
+      const end = s.lastIndexOf('}');
+      if (start < 0 || end <= start) return null;
+      s = s.slice(start, end + 1);
+      // Remove trailing commas before } or ]
+      s = s.replace(/,\s*([}\]])/g, '$1');
+      // Fix unescaped newlines in strings (common with LLM output)
+      s = s.replace(/:\s*"((?:[^"\\]|\\.)*)"/g, (match) => {
+        return match.replace(/\n/g, '\\n');
+      });
+      return JSON.parse(s);
+    },
+    // 5. Find individual script objects if wrapper is broken
+    () => {
+      const scripts = [];
+      const re = /\{[^{}]*"title"\s*:\s*"[^"]*"[^{}]*"full_script"\s*:\s*\{[\s\S]*?\}\s*\}/g;
+      // Greedy approach: find "title" markers and parse each block
+      const titlePositions = [];
+      let idx = 0;
+      while ((idx = cleaned.indexOf('"title"', idx)) !== -1) {
+        // Walk back to find opening {
+        let bracePos = cleaned.lastIndexOf('{', idx);
+        if (bracePos >= 0) titlePositions.push(bracePos);
+        idx++;
       }
-      return null;
-    },
+      for (let i = 0; i < titlePositions.length; i++) {
+        const startPos = titlePositions[i];
+        // Find matching closing brace
+        let depth = 0;
+        for (let j = startPos; j < cleaned.length; j++) {
+          if (cleaned[j] === '{') depth++;
+          else if (cleaned[j] === '}') { depth--; if (depth === 0) {
+            try {
+              let block = cleaned.slice(startPos, j + 1).replace(/,\s*([}\]])/g, '$1');
+              scripts.push(JSON.parse(block));
+            } catch (e) {}
+            break;
+          }}
+        }
+      }
+      return scripts.length ? { scripts } : null;
+    }
   ];
 
   for (const strategy of strategies) {
