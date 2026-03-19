@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jenny — 3 Variations</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#080808;--surface:#111;--surface2:#1a1a1a;--border:#222;--pink:#e70088;--pink-dim:rgba(231,0,136,.15);--green:#00e676;--green-dim:rgba(0,230,118,.15);--orange:#ff9100;--orange-dim:rgba(255,145,0,.15);--blue:#448aff;--blue-dim:rgba(68,138,255,.15);--yellow:#ffd600;--yellow-dim:rgba(255,214,0,.15);--text:#fff;--dim:rgba(255,255,255,.5);--faint:rgba(255,255,255,.2);--radius:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);padding:24px 16px;-webkit-font-smoothing:antialiased}
+.container{max-width:900px;margin:0 auto}
+h1{font-size:24px;font-weight:800;text-align:center;margin-bottom:24px}
+h1 span{color:var(--pink)}
+.script-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.script-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.script-title{font-size:18px;font-weight:700}
+.badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;text-transform:uppercase}
+.badge-pink{background:var(--pink-dim);color:var(--pink)}
+.badge-green{background:var(--green-dim);color:var(--green)}
+.badge-blue{background:var(--blue-dim);color:var(--blue)}
+.badge-orange{background:var(--orange-dim);color:var(--orange)}
+.script-meta{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px}
+.meta-item{background:var(--surface2);border-radius:8px;padding:10px 12px}
+.meta-label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.meta-value{font-size:13px;font-weight:600;margin-top:2px}
+.beat{background:var(--surface2);border-radius:8px;padding:14px 16px;margin-bottom:8px}
+.beat-time{font-size:12px;color:var(--pink);font-weight:700;margin-bottom:6px}
+.beat-row{display:flex;gap:16px;flex-wrap:wrap}
+.beat-field{flex:1;min-width:150px}
+.beat-field-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.beat-field-value{font-size:13px;line-height:1.5}
+.beat-field-value.dialogue{color:var(--yellow);font-style:italic}
+.beat-field-value.text-overlay{color:var(--pink)}
+.section{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.section-label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.section-text{font-size:13px;line-height:1.6}
+.caption-text{font-size:14px;line-height:1.6;margin-bottom:8px}
+.hashtags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.hashtag{font-size:12px;color:var(--blue);background:var(--blue-dim);padding:2px 8px;border-radius:4px}
+.why-text{font-size:13px;color:var(--dim);line-height:1.5;padding:12px;background:var(--surface2);border-radius:8px}
+.ref-link{color:var(--pink);text-decoration:none;font-size:12px}
+.ref-link:hover{text-decoration:underline}
+@media(max-width:600px){
+  .script-card{padding:14px}
+  .script-title{font-size:16px}
+  .script-meta{grid-template-columns:1fr 1fr}
+  .beat-row{flex-direction:column;gap:8px}
+  .beat-field{min-width:unset}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Jenny — <span>3 Variations</span></h1>
+<div id="cards"></div>
+</div>
+<script>
+const data = {"scripts":[{"title":"Applebee's in Cargo Shorts","vertical":"Talking","sub_style":"misdirection advice list → punchline roast","avatar_target":"Growth Engine","confidence":"winner","duration":"7-9s","setup":"Indoor — plain white or neutral wall. Jenny seated at a table or on a bed. Low-angle selfie cam propped below chin level. Tight pink or white low-cut top. Hair down. Confident, 'I'm about to educate you' energy. No props needed.","full_script":{"beat_1":{"timestamp":"0:00-0:01","visual":"Low-angle selfie shot looking up at Jenny's chest/face. She leans into frame with a serious, almost sympathetic expression — like she's about to deliver hard truths. Tight top dominates the lower frame.","text_overlay":null,"dialogue":"Okay I'm gonna tell you exactly why your last date went wrong.","audio":"Original audio — her voice only, no music"},"beat_2":{"timestamp":"0:01-0:03","visual":"She holds up one finger, shifts to a lecturing posture. Captions auto-generate at mid-body level forcing eyes downward.","text_overlay":null,"dialogue":"Number one — you talked about your ex. Number two — you were on your phone the whole time.","audio":"Original audio — her voice, building pace"},"beat_3":{"timestamp":"0:03-0:06","visual":"She pauses. Looks directly into the lens. The 'about to ruin you' face — slight head tilt, one eyebrow raised. Holds the beat for a full second before delivering.","text_overlay":null,"dialogue":"And number three — you took her to Applebee's. In cargo shorts.","audio":"Original audio — delivers 'Applebee's' with disgust, 'cargo shorts' with finality like she's reading a death sentence"},"beat_4":{"timestamp":"0:06-0:08","visual":"She stares into the camera with a flat, unamused expression for 1.5 seconds. Doesn't blink. Lets the silence do the work. Maybe a tiny head shake at the very end like 'pathetic.'","text_overlay":null,"dialogue":null,"audio":"Dead silence for the stare, then cut"}},"caption":"where's the WORST place a man has ever taken you on a date? I need stories 💀","hashtags":["#datinghumor","#funnyreels","#latinacomedy","#firstdate","#datingfails"],"posting_time":"Thursday 8:00 PM EST","reference_reel":"https://www.instagram.com/reel/DTzQHSnju9x","avatar_note":"Jaylen sends this to the group chat because the Applebee's/cargo shorts specificity makes it feel like a targeted attack on someone they know — guaranteed 'bro she's talking about YOU' tags.","why_this_works":"Structurally mirrors DTzQHSnju9x (2.1M views, 98.5% non-follower, 69x baseline) — earnest advice tone that builds trust, then a specific punchline that lands as a roast. But instead of 'because you're gay' (which she's already done 3x), the punchline is hyper-specific and DEBATABLE — some guys will defend Applebee's, some will defend cargo shorts, creating two-front comment warfare."},{"title":"Venmo Requested Me for Garlic Bread","vertical":"Talking","sub_style":"animated rant escalation with absurd punchline","avatar_target":"Core Subscriber","confidence":"strong","duration":"10-13s","setup":"Indoor — bed or couch. Jenny lying propped up on pillows or sitting cross-legged, low-cut top, hair messy like she just got home from this date and NEEDS to vent. Phone propped at bed level for that intimate 'FaceTiming your best friend' angle. Slightly warm lighting — bedroom vibes.","full_script":{"beat_1":{"timestamp":"0:00-0:02","visual":"Jenny mid-torso up, leaning toward camera with the 'you're not gonna BELIEVE this' face. Eyes wide. One hand already gesturing.","text_overlay":null,"dialogue":"So this man takes me to dinner right?","audio":"Original audio — she's already at an 8 out of 10 energy. No warm-up."},"beat_2":{"timestamp":"0:02-0:05","visual":"She mimes pulling out a phone and tapping on it — exaggerated, theatrical, making the calculator gesture obvious. Her face shifts to pure disbelief.","text_overlay":null,"dialogue":"Pulls out his phone, opens the CALCULATOR, splits the bill to the PENNY — including the bread we shared —","audio":"Voice escalates on 'CALCULATOR' and 'PENNY' — real indignation, not performative."},"beat_3":{"timestamp":"0:05-0:08","visual":"She drops her hands, leans back slightly, and does the slow disbelieving head-turn like she's replaying the moment. Then snaps back to camera.","text_overlay":null,"dialogue":"then looks at me and goes 'so you wanna come back to my place?'","audio":"She drops her voice to mimic his tone — slightly deeper, cocky inflection on 'my place'"},"beat_4":{"timestamp":"0:08-0:12","visual":"She straightens up. Direct eye contact. The rant energy drops to cold, measured delivery. Points at the camera with one finger.","text_overlay":null,"dialogue":"Sir. You just Venmo requested me four dollars and seventy-five cents for garlic bread and you think I'm going home with you?","audio":"Measured, slow, deliberate — every syllable of 'four dollars and seventy-five cents' hits individually."}},"caption":"tell me the cheapest thing a date has ever done 💀 I know y'all got stories worse than this","hashtags":["#datinghumor","#latinacomedy","#comedyreels","#reelscomedy","#datingfails"],"posting_time":"Saturday 9:00 PM EST","reference_reel":"https://www.instagram.com/reel/DVRFrpmDuXm","avatar_note":"Marcus watches this and thinks 'that's the kind of girl I want to rant to ME about her day' — the FaceTime intimacy angle + her animated personality is the 'fun Latina girlfriend' fantasy rendered as content.","why_this_works":"Draws structural energy from DVRFrpmDuXm (421K, 89% 1s retention, 4,209 follows, 5,330 shares) — Jenny's animated rant style is a proven scroll-stopper. The $4.75 garlic bread specificity does heavy lifting."},{"title":"Perfect Date Then He Texted Me This","vertical":"Talking","sub_style":"emotional buildup → absurd text reveal with escalating disbelief","avatar_target":"Core Subscriber","confidence":"strong","duration":"9-12s","setup":"Indoor — bedroom. Jenny in a low-cut tank top, lying on her stomach on the bed with her chin propped on one hand. Hair slightly tousled. 'Post-date debrief with your best friend' angle. Phone propped on a pillow.","full_script":{"beat_1":{"timestamp":"0:00-0:03","visual":"Jenny's face fills the frame — close, warm, conspiratorial smile. She's glowing. Intimate framing.","text_overlay":null,"dialogue":"Okay so the date last night? Actually perfect. He was funny, he paid, walked me to my car, kissed me goodnight — I'm talking movie shit.","audio":"Original audio — soft, excited, almost giddy."},"beat_2":{"timestamp":"0:03-0:05","visual":"Her smile fades. She blinks once. Looks down for half a second then back up. The glow is gone.","text_overlay":null,"dialogue":"Then I get home... and this man texts me...","audio":"Voice drops. Slower pace."},"beat_3":{"timestamp":"0:05-0:09","visual":"She lifts her phone into frame and reads. Face cycles through: confusion → disbelief → offense → dead stare.","text_overlay":"Text bubble: 'Hey had a great time tonight 😊 Quick question — are those real? Been thinking about it all night lol'","dialogue":"Hey had a great time tonight. Quick question — are those real? Been thinking about it all night. LOL.","audio":"Flat monotone. 'LOL' delivered with maximum venom — L. O. L. individually."},"beat_4":{"timestamp":"0:09-0:11","visual":"She puts the phone down. Direct camera look. One long blink. Tiniest dangerous smile before cut to black.","text_overlay":null,"dialogue":"Sir.","audio":"One word, barely above a whisper. Cut on the smile."}},"caption":"what is the CRAZIEST text you've gotten after a date?? I need to know I'm not the only one 😭😭 drop it below","hashtags":["#datinghumor","#funnyreels","#latinacomedy","#textsfromhim","#datingfails"],"posting_time":"Tuesday 7:30 PM EST","reference_reel":"https://www.instagram.com/reel/DUB8vEAEvGY","avatar_note":"Marcus sees the perfect-date buildup and projects himself into the scenario ('I'd never be that stupid'), which means he HAS to comment.","why_this_works":"DUB8vEAEvGY proved this structure works — great date → shocking post-date text. This version improves with a universally understood punchline specific to Jenny's physical brand, longer emotional buildup, and explicit story prompt caption."}]};
+
+function confBadge(c){const m={'winner':'badge-green','strong':'badge-blue','experimental':'badge-orange'};return`<span class="badge ${m[c]||'badge-pink'}">${c}</span>`}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+const cards=document.getElementById('cards');
+for(const s of data.scripts){
+  const beats=Object.entries(s.full_script||{}).sort(([a],[b])=>a.localeCompare(b));
+  let html=`<div class="script-card">
+    <div class="script-header">
+      <span class="script-title">${esc(s.title)}</span>
+      ${confBadge(s.confidence)}
+      <span class="badge badge-pink">${esc(s.vertical)}</span>
+    </div>
+    <div class="script-meta">
+      <div class="meta-item"><div class="meta-label">Sub-style</div><div class="meta-value">${esc(s.sub_style)}</div></div>
+      <div class="meta-item"><div class="meta-label">Avatar</div><div class="meta-value">${esc(s.avatar_target)}</div></div>
+      <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value">${esc(s.duration)}</div></div>
+      <div class="meta-item"><div class="meta-label">Post Time</div><div class="meta-value">${esc(s.posting_time)}</div></div>
+    </div>
+    <div class="section"><div class="section-label">Setup</div><div class="section-text">${esc(s.setup)}</div></div>`;
+  
+  for(const [k,b] of beats){
+    html+=`<div class="beat">
+      <div class="beat-time">${esc(b.timestamp)}</div>
+      <div class="beat-row">
+        <div class="beat-field"><div class="beat-field-label">Visual</div><div class="beat-field-value">${esc(b.visual)}</div></div>
+        ${b.dialogue?`<div class="beat-field"><div class="beat-field-label">Dialogue</div><div class="beat-field-value dialogue">"${esc(b.dialogue)}"</div></div>`:''}
+        ${b.text_overlay?`<div class="beat-field"><div class="beat-field-label">Text Overlay</div><div class="beat-field-value text-overlay">${esc(b.text_overlay)}</div></div>`:''}
+        ${b.audio?`<div class="beat-field"><div class="beat-field-label">Audio</div><div class="beat-field-value">${esc(b.audio)}</div></div>`:''}
+      </div>
+    </div>`;
+  }
+
+  html+=`<div class="section">
+    <div class="section-label">Caption</div>
+    <div class="caption-text">${esc(s.caption)}</div>
+    <div class="hashtags">${(s.hashtags||[]).map(h=>`<span class="hashtag">${esc(h)}</span>`).join('')}</div>
+    ${s.reference_reel?`<a class="ref-link" href="${esc(s.reference_reel)}" target="_blank">📎 Reference: ${esc(s.reference_reel)}</a>`:''}
+  </div>`;
+  
+  if(s.avatar_note)html+=`<div class="section"><div class="section-label">Avatar Note</div><div class="section-text">${esc(s.avatar_note)}</div></div>`;
+  if(s.why_this_works)html+=`<div class="section"><div class="section-label">Why This Works</div><div class="why-text">${esc(s.why_this_works)}</div></div>`;
+  
+  html+=`</div>`;
+  cards.innerHTML+=html;
+}
+</script>
+</body>
+</html>
