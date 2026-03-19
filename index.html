@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Evora — Script Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #080808; --surface: #111; --surface2: #1a1a1a;
+      --border: #222; --border-active: #e70088;
+      --pink: #e70088; --pink-dim: rgba(231,0,136,0.15);
+      --green: #00e676; --green-dim: rgba(0,230,118,0.15);
+      --orange: #ff9100; --orange-dim: rgba(255,145,0,0.15);
+      --blue: #448aff; --blue-dim: rgba(68,138,255,0.15);
+      --yellow: #ffd600; --yellow-dim: rgba(255,214,0,0.15);
+      --red: #ff4444; --red-dim: rgba(255,68,68,0.15);
+      --text: #fff; --dim: rgba(255,255,255,0.5); --faint: rgba(255,255,255,0.2);
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    /* PIN */
+    #pin-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+    #pin-screen h1 { font-size: 28px; font-weight: 800; color: var(--pink); margin-bottom: 8px; }
+    #pin-screen p { color: var(--dim); font-size: 14px; margin-bottom: 24px; }
+    #pin-input { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 24px; text-align: center; letter-spacing: 8px; padding: 16px 24px; width: 200px; outline: none; }
+    #pin-input:focus { border-color: var(--pink); }
+
+    /* MAIN */
+    #app { display: none; max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    .header { text-align: center; margin-bottom: 32px; }
+    .header h1 { font-size: 24px; font-weight: 800; }
+    .header h1 span { color: var(--pink); }
+    .header p { color: var(--dim); font-size: 13px; margin-top: 4px; }
+
+    /* Controls */
+    .control-bar { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-end; }
+    .control-bar select, .control-bar button { font-family: inherit; }
+    select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 12px 16px; font-size: 14px; outline: none; cursor: pointer; min-width: 200px; }
+    select:focus { border-color: var(--pink); }
+
+    .prompt-area { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 16px; font-size: 14px; font-family: inherit; min-height: 120px; resize: vertical; outline: none; line-height: 1.6; }
+    .prompt-area:focus { border-color: var(--pink); }
+    .prompt-area::placeholder { color: var(--faint); }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .btn { padding: 10px 20px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+    .btn:hover { border-color: var(--pink); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--pink); border-color: var(--pink); color: #fff; }
+    .btn-primary:hover { background: #c70076; }
+    .btn-primary:disabled { background: var(--pink); opacity: 0.4; }
+
+    /* Loading */
+    .loading-bar { height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin: 16px 0; display: none; }
+    .loading-bar.active { display: block; }
+    .loading-bar .fill { height: 100%; background: var(--pink); width: 0; animation: loading 2s ease-in-out infinite; }
+    @keyframes loading { 0% { width: 0; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0; margin-left: 100%; } }
+
+    /* Context badge */
+    .context-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--green-dim); border: 1px solid rgba(0,230,118,0.2); border-radius: 8px; padding: 6px 12px; font-size: 12px; color: var(--green); margin-top: 12px; }
+    .context-badge.loading { background: var(--orange-dim); border-color: rgba(255,145,0,0.2); color: var(--orange); }
+    .context-badge.error { background: var(--red-dim); border-color: rgba(255,68,68,0.2); color: var(--red); }
+
+    /* Output */
+    #output { margin-top: 24px; }
+    .script-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+    .script-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .script-title { font-size: 18px; font-weight: 700; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .badge-pink { background: var(--pink-dim); color: var(--pink); }
+    .badge-green { background: var(--green-dim); color: var(--green); }
+    .badge-blue { background: var(--blue-dim); color: var(--blue); }
+    .badge-orange { background: var(--orange-dim); color: var(--orange); }
+    .badge-yellow { background: var(--yellow-dim); color: var(--yellow); }
+
+    .script-meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 16px; }
+    .meta-item { background: var(--surface2); border-radius: 8px; padding: 10px 12px; }
+    .meta-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .meta-value { font-size: 13px; font-weight: 600; margin-top: 2px; }
+
+    .beat { background: var(--surface2); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; }
+    .beat-time { font-size: 12px; color: var(--pink); font-weight: 700; margin-bottom: 6px; }
+    .beat-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .beat-field { flex: 1; min-width: 150px; }
+    .beat-field-label { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .beat-field-value { font-size: 13px; line-height: 1.5; }
+    .beat-field-value.dialogue { color: var(--yellow); font-style: italic; }
+    .beat-field-value.text-overlay { color: var(--pink); }
+
+    .script-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .script-footer .caption-text { font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
+    .script-footer .hashtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .script-footer .why-text { font-size: 13px; color: var(--dim); line-height: 1.5; margin-top: 12px; padding: 12px; background: var(--surface2); border-radius: 8px; }
+
+    .raw-output { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+
+    /* Adjust input */
+    .adjust-bar { display: flex; gap: 8px; margin-top: 12px; }
+    .adjust-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 10px 14px; font-size: 13px; font-family: inherit; outline: none; }
+    .adjust-input:focus { border-color: var(--pink); }
+  </style>
+</head>
+<body>
+
+<div id="pin-screen">
+  <h1>EVORA</h1>
+  <p>Script Generator</p>
+  <input type="password" id="pin-input" maxlength="4" inputmode="numeric" placeholder="••••" autofocus/>
+</div>
+
+<div id="app">
+  <div class="header">
+    <h1>EVORA <span>Script Generator</span></h1>
+    <p>Full creator context → Opus → production-ready scripts</p>
+  </div>
+
+  <div class="control-bar">
+    <select id="creator-select">
+      <option value="">Select creator…</option>
+    </select>
+  </div>
+
+  <div id="context-status"></div>
+
+  <textarea id="prompt" class="prompt-area" placeholder="What do you want to create?
+
+Examples:
+• A POV style skit matching Jenny's winning formats. Focused on growth.
+• Expand this idea into a full script: [paste idea from profile]
+• Give me 5 variations of the voyeuristic candid bar shot formula but in daytime settings
+• Write a Snapchat-style skit that would make her Growth Engine persona share it to a group chat" disabled></textarea>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btn-generate" disabled>Generate</button>
+    <button class="btn" id="btn-regenerate" disabled>Regenerate</button>
+    <button class="btn" id="btn-variations" disabled>3 Variations</button>
+  </div>
+
+  <div class="loading-bar" id="loading"><div class="fill"></div></div>
+
+  <div id="output"></div>
+
+  <div class="adjust-bar" id="adjust-bar" style="display:none">
+    <input type="text" class="adjust-input" id="adjust-input" placeholder="Adjust: e.g. 'make the punchline edgier' or 'change setting to gym'"/>
+    <button class="btn btn-primary" id="btn-adjust">Adjust</button>
+  </div>
+</div>
+
+<script>
+const EDGE_FN = 'https://jhawboejqoaoqgmkxzfq.supabase.co/functions/v1/generate-script';
+const SB_URL = 'https://jhawboejqoaoqgmkxzfq.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpoYXdib2VqcW9hb3FnbWt4emZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTgwMjcsImV4cCI6MjA4ODkzNDAyN30.4RfTKl-g28BZpVl2_DWLZ_blvXWosSdn-5J2Sja27hM';
+
+let PIN = '';
+let creatorCtx = null;
+let lastOutput = '';
+let lastPrompt = '';
+
+// PIN
+const pinInput = document.getElementById('pin-input');
+pinInput.addEventListener('input', async () => {
+  if (pinInput.value.length === 4) {
+    PIN = pinInput.value;
+    // Verify PIN by trying to load creators
+    try {
+      const resp = await fetch(`${SB_URL}/creator_identity?select=handle&is_active=eq.true`, {
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+      });
+      if (resp.ok) {
+        document.getElementById('pin-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        loadCreators();
+      }
+    } catch (e) {
+      pinInput.value = '';
+      pinInput.style.borderColor = 'var(--red)';
+    }
+  }
+});
+
+// Load creators
+async function loadCreators() {
+  const resp = await fetch(`${SB_URL}/creator_identity?select=handle,primary_niche,stage`, {
+    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+  });
+  const creators = await resp.json();
+  const sel = document.getElementById('creator-select');
+  for (const c of creators) {
+    const opt = document.createElement('option');
+    opt.value = c.handle;
+    opt.textContent = `@${c.handle} — ${c.primary_niche || 'TBD'} (${c.stage})`;
+    sel.appendChild(opt);
+  }
+}
+
+// Creator selection
+document.getElementById('creator-select').addEventListener('change', async (e) => {
+  const handle = e.target.value;
+  if (!handle) {
+    creatorCtx = null;
+    document.getElementById('prompt').disabled = true;
+    document.getElementById('btn-generate').disabled = true;
+    document.getElementById('context-status').innerHTML = '';
+    return;
+  }
+
+  const statusEl = document.getElementById('context-status');
+  statusEl.innerHTML = '<div class="context-badge loading">⏳ Loading creator context…</div>';
+
+  try {
+    // Load identity + latest profile (for display)
+    const [identResp, profResp] = await Promise.all([
+      fetch(`${SB_URL}/creator_identity?select=*&handle=eq.${handle}`, {
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+      }),
+      fetch(`${SB_URL}/creator_profiles?select=version,synthesized_at&handle=eq.${handle}&order=version.desc&limit=1`, {
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+      }),
+    ]);
+
+    const identity = (await identResp.json())[0];
+    const profile = (await profResp.json())[0];
+
+    creatorCtx = { handle, identity };
+
+    const verticals = identity?.verticals ? (typeof identity.verticals === 'string' ? JSON.parse(identity.verticals) : identity.verticals) : [];
+    let info = `✅ @${handle} loaded`;
+    if (profile) info += ` | v${profile.version} synthesized ${new Date(profile.synthesized_at).toLocaleDateString()}`;
+    if (verticals.length) info += ` | Verticals: ${verticals.join(', ')}`;
+    statusEl.innerHTML = `<div class="context-badge">${info}</div>`;
+
+    document.getElementById('prompt').disabled = false;
+    document.getElementById('btn-generate').disabled = false;
+    document.getElementById('prompt').focus();
+  } catch (err) {
+    statusEl.innerHTML = `<div class="context-badge error">❌ Failed to load: ${err.message}</div>`;
+  }
+});
+
+// Generate
+async function callEdgeFunction(action, adjustFeedback) {
+  if (!creatorCtx) return;
+
+  const promptEl = document.getElementById('prompt');
+  const userPrompt = adjustFeedback || promptEl.value.trim();
+  if (!userPrompt) return;
+
+  lastPrompt = promptEl.value.trim();
+  const loading = document.getElementById('loading');
+  const output = document.getElementById('output');
+  const adjustBar = document.getElementById('adjust-bar');
+
+  loading.classList.add('active');
+  output.innerHTML = '<div class="raw-output" id="stream-output" style="color:var(--dim)">Generating…</div>';
+  adjustBar.style.display = 'none';
+
+  document.getElementById('btn-generate').disabled = true;
+  document.getElementById('btn-regenerate').disabled = true;
+  document.getElementById('btn-variations').disabled = true;
+
+  try {
+    const resp = await fetch(EDGE_FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-pin': PIN },
+      body: JSON.stringify({
+        handle: creatorCtx.handle,
+        prompt: action === 'adjust' ? `ADJUSTMENT: ${userPrompt}\n\nOriginal prompt: ${lastPrompt}` : userPrompt,
+        action,
+        previousOutput: action === 'adjust' ? lastOutput : undefined,
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: resp.statusText }));
+      output.innerHTML = `<div class="raw-output" style="color:var(--red)">Error: ${err.error || resp.statusText}</div>`;
+      return;
+    }
+
+    // Stream SSE
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    const streamEl = document.getElementById('stream-output');
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+        try {
+          const event = JSON.parse(data);
+          if (event.type === 'content_block_delta') {
+            const delta = event.delta;
+            if (delta?.type === 'text_delta') {
+              fullText += delta.text;
+              streamEl.textContent = fullText;
+              streamEl.scrollTop = streamEl.scrollHeight;
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    lastOutput = fullText;
+
+    // Try to parse as JSON and render structured
+    try {
+      let jsonStr = fullText.trim();
+      if (jsonStr.includes('```json')) jsonStr = jsonStr.split('```json')[1].split('```')[0];
+      else if (jsonStr.includes('```')) jsonStr = jsonStr.split('```')[1].split('```')[0];
+      const parsed = JSON.parse(jsonStr.trim());
+      renderScripts(parsed);
+    } catch (e) {
+      // Not JSON — show as raw text (conversational response)
+      output.innerHTML = `<div class="raw-output">${escHtml(fullText)}</div>`;
+    }
+
+    adjustBar.style.display = 'flex';
+
+  } catch (err) {
+    output.innerHTML = `<div class="raw-output" style="color:var(--red)">Error: ${err.message}</div>`;
+  } finally {
+    loading.classList.remove('active');
+    document.getElementById('btn-generate').disabled = false;
+    document.getElementById('btn-regenerate').disabled = false;
+    document.getElementById('btn-variations').disabled = false;
+  }
+}
+
+document.getElementById('btn-generate').addEventListener('click', () => callEdgeFunction('generate'));
+document.getElementById('btn-regenerate').addEventListener('click', () => callEdgeFunction('generate'));
+document.getElementById('btn-variations').addEventListener('click', () => callEdgeFunction('variations'));
+document.getElementById('btn-adjust').addEventListener('click', () => {
+  const feedback = document.getElementById('adjust-input').value.trim();
+  if (feedback) callEdgeFunction('adjust', feedback);
+});
+
+// Enter key in prompt
+document.getElementById('prompt').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    callEdgeFunction('generate');
+  }
+});
+
+// Enter key in adjust input
+document.getElementById('adjust-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const feedback = e.target.value.trim();
+    if (feedback) callEdgeFunction('adjust', feedback);
+  }
+});
+
+// Render scripts
+function renderScripts(data) {
+  const output = document.getElementById('output');
+  const scripts = data.scripts || [data];
+  let html = '';
+
+  for (const s of scripts) {
+    html += '<div class="script-card">';
+
+    // Header
+    html += '<div class="script-header">';
+    html += `<span class="script-title">${escHtml(s.title || 'Untitled')}</span>`;
+    if (s.vertical) html += ` <span class="badge badge-pink">${escHtml(s.vertical)}</span>`;
+    if (s.sub_style) html += ` <span class="badge badge-blue">${escHtml(s.sub_style)}</span>`;
+    if (s.avatar_target) html += ` <span class="badge badge-green">${escHtml(s.avatar_target)}</span>`;
+    const confColor = s.confidence === 'winner' ? 'badge-green' : s.confidence === 'strong' ? 'badge-blue' : 'badge-orange';
+    if (s.confidence) html += ` <span class="badge ${confColor}">${escHtml(s.confidence)}</span>`;
+    html += '</div>';
+
+    // Meta
+    html += '<div class="script-meta">';
+    if (s.duration) html += `<div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value">${escHtml(s.duration)}</div></div>`;
+    if (s.setup) html += `<div class="meta-item"><div class="meta-label">Setup</div><div class="meta-value">${escHtml(s.setup)}</div></div>`;
+    if (s.posting_time) html += `<div class="meta-item"><div class="meta-label">Post Time</div><div class="meta-value">${escHtml(s.posting_time)}</div></div>`;
+    if (s.reference_reel) html += `<div class="meta-item"><div class="meta-label">Reference</div><div class="meta-value"><a href="${escHtml(s.reference_reel)}" target="_blank" style="color:var(--pink)">Watch →</a></div></div>`;
+    html += '</div>';
+
+    // Beats
+    const script = s.full_script || {};
+    const beatKeys = Object.keys(script).sort();
+    if (beatKeys.length) {
+      for (const bk of beatKeys) {
+        const b = script[bk];
+        html += '<div class="beat">';
+        html += `<div class="beat-time">${escHtml(b.timestamp || bk)}</div>`;
+        html += '<div class="beat-row">';
+        if (b.visual) html += `<div class="beat-field"><div class="beat-field-label">Visual</div><div class="beat-field-value">${escHtml(b.visual)}</div></div>`;
+        if (b.text_overlay) html += `<div class="beat-field"><div class="beat-field-label">Text Overlay</div><div class="beat-field-value text-overlay">${escHtml(b.text_overlay)}</div></div>`;
+        if (b.dialogue) html += `<div class="beat-field"><div class="beat-field-label">Dialogue</div><div class="beat-field-value dialogue">${escHtml(b.dialogue)}</div></div>`;
+        if (b.audio) html += `<div class="beat-field"><div class="beat-field-label">Audio</div><div class="beat-field-value">${escHtml(b.audio)}</div></div>`;
+        html += '</div></div>';
+      }
+    }
+
+    // Footer
+    html += '<div class="script-footer">';
+    if (s.caption) html += `<div class="meta-label">Caption</div><div class="caption-text">${escHtml(s.caption)}</div>`;
+    if (s.hashtags?.length) {
+      html += '<div class="hashtags">';
+      for (const h of s.hashtags) html += `<span class="badge badge-blue">${escHtml(h)}</span>`;
+      html += '</div>';
+    }
+    if (s.avatar_note) html += `<div style="font-size:13px;color:var(--green);margin-bottom:8px">🎯 ${escHtml(s.avatar_note)}</div>`;
+    if (s.why_this_works) html += `<div class="why-text">📊 ${escHtml(s.why_this_works)}</div>`;
+    html += '</div>';
+
+    html += '</div>';
+  }
+
+  output.innerHTML = html;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
