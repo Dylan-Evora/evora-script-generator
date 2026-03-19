@@ -166,22 +166,24 @@ const pinInput = document.getElementById('pin-input');
 pinInput.addEventListener('input', async () => {
   if (pinInput.value.length === 4) {
     PIN = pinInput.value;
-    // Verify PIN by trying to load creators
-    try {
-      const resp = await fetch(`${SB_URL}/creator_identity?select=handle&is_active=eq.true`, {
-        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
-      });
-      if (resp.ok) {
-        document.getElementById('pin-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        loadCreators();
-      }
-    } catch (e) {
+    const hash = await hashPin(PIN);
+    if (hash === '158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab') {
+      document.getElementById('pin-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      loadCreators();
+    } else {
       pinInput.value = '';
       pinInput.style.borderColor = 'var(--red)';
+      setTimeout(() => { pinInput.style.borderColor = ''; }, 1500);
     }
   }
 });
+
+async function hashPin(pin) {
+  const data = new TextEncoder().encode(pin);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 // Load creators
 async function loadCreators() {
