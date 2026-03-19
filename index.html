@@ -103,6 +103,28 @@
     .adjust-bar { display: flex; gap: 8px; margin-top: 12px; }
     .adjust-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 10px 14px; font-size: 13px; font-family: inherit; outline: none; }
     .adjust-input:focus { border-color: var(--pink); }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      #app { padding: 16px 12px; }
+      .header h1 { font-size: 20px; }
+      .control-bar { flex-direction: column; align-items: stretch; }
+      select { min-width: unset; width: 100%; }
+      .prompt-area { min-height: 80px; font-size: 14px; }
+      .btn-row { flex-direction: row; flex-wrap: wrap; }
+      .btn { flex: 1; min-width: 80px; padding: 12px 10px; font-size: 12px; text-align: center; }
+      .script-card { padding: 14px; }
+      .script-header { gap: 6px; }
+      .script-title { font-size: 16px; }
+      .badge { font-size: 10px; padding: 2px 8px; }
+      .script-meta { grid-template-columns: 1fr 1fr; }
+      .beat-row { flex-direction: column; gap: 8px; }
+      .beat-field { min-width: unset; }
+      .beat-field-value { font-size: 13px; }
+      .script-footer .why-text { font-size: 12px; }
+      .adjust-bar { flex-direction: column; }
+      .raw-output { padding: 14px; font-size: 12px; max-height: 60vh; overflow-y: auto; }
+    }
   </style>
 </head>
 <body>
@@ -139,7 +161,6 @@ Examples:
     <button class="btn btn-primary" id="btn-generate" disabled>Generate</button>
     <button class="btn" id="btn-regenerate" disabled>Regenerate</button>
     <button class="btn" id="btn-variations" disabled>3 Variations</button>
-    <button class="btn" id="btn-paste-json" style="margin-left:auto">📋 Paste JSON</button>
   </div>
 
   <div class="loading-bar" id="loading"><div class="fill"></div></div>
@@ -259,7 +280,10 @@ async function callEdgeFunction(action, adjustFeedback) {
   const adjustBar = document.getElementById('adjust-bar');
 
   loading.classList.add('active');
-  output.innerHTML = '<div class="raw-output" id="stream-output" style="color:var(--dim)">Generating…</div>';
+  const isMobile = window.innerWidth <= 600;
+  output.innerHTML = isMobile
+    ? '<div class="raw-output" id="stream-output" style="color:var(--dim);text-align:center;padding:40px 20px"><div style="font-size:24px;margin-bottom:12px">✨</div>Generating script…<br><span style="font-size:12px;color:var(--faint)">This takes about 60 seconds</span><div id="stream-chars" style="margin-top:12px;font-size:11px;color:var(--faint)"></div></div>'
+    : '<div class="raw-output" id="stream-output" style="color:var(--dim)">Generating…</div>';
   adjustBar.style.display = 'none';
 
   document.getElementById('btn-generate').disabled = true;
@@ -307,8 +331,13 @@ async function callEdgeFunction(action, adjustFeedback) {
             const delta = event.delta;
             if (delta?.type === 'text_delta') {
               fullText += delta.text;
-              streamEl.textContent = fullText;
-              streamEl.scrollTop = streamEl.scrollHeight;
+              if (isMobile) {
+                const charsEl = document.getElementById('stream-chars');
+                if (charsEl) charsEl.textContent = `${fullText.length} chars received…`;
+              } else {
+                streamEl.textContent = fullText;
+                streamEl.scrollTop = streamEl.scrollHeight;
+              }
             }
           }
         } catch (e) {}
@@ -351,20 +380,6 @@ document.getElementById('prompt').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
     e.preventDefault();
     callEdgeFunction('generate');
-  }
-});
-
-// Paste JSON button
-document.getElementById('btn-paste-json').addEventListener('click', () => {
-  const jsonStr = window.prompt('Paste script JSON:');
-  if (!jsonStr) return;
-  const parsed = tryParseScriptJSON(jsonStr);
-  if (parsed) {
-    renderScripts(parsed);
-    document.getElementById('adjust-bar').style.display = 'flex';
-    lastOutput = jsonStr;
-  } else {
-    document.getElementById('output').innerHTML = '<div class="raw-output" style="color:var(--red)">Could not parse JSON. Make sure it\'s valid.</div>';
   }
 });
 
