@@ -107,6 +107,25 @@
     .adjust-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 10px 14px; font-size: 13px; font-family: inherit; outline: none; }
     .adjust-input:focus { border-color: var(--pink); }
 
+    /* Save button on cards */
+    .save-btn { position: absolute; top: 12px; right: 12px; background: var(--green-dim); border: 1px solid rgba(0,230,118,0.3); color: var(--green); border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .save-btn:hover { background: var(--green); color: #000; }
+    .save-btn.saved { background: var(--surface2); border-color: var(--border); color: var(--dim); cursor: default; }
+    .script-card { position: relative; }
+
+    /* Saved panel */
+    #saved-panel { display: none; margin-top: 24px; }
+    #saved-panel.active { display: block; }
+    .saved-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .saved-header h2 { font-size: 18px; font-weight: 700; }
+    .saved-header .back-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius); padding: 8px 16px; font-size: 13px; cursor: pointer; font-family: inherit; }
+    .saved-header .back-btn:hover { border-color: var(--pink); }
+    .saved-empty { text-align: center; color: var(--dim); padding: 40px; font-size: 14px; }
+    .saved-script-actions { display: flex; gap: 6px; margin-top: 12px; }
+    .saved-script-actions .btn { font-size: 11px; padding: 6px 12px; }
+    .delete-btn { color: var(--red); border-color: rgba(255,68,68,0.3); }
+    .delete-btn:hover { background: var(--red-dim); }
+
     /* Mobile */
     @media (max-width: 600px) {
       #app { padding: 16px 12px; }
@@ -164,11 +183,20 @@ Examples:
     <button class="btn btn-primary" id="btn-generate" disabled>Generate</button>
     <button class="btn" id="btn-regenerate" disabled>Regenerate</button>
     <button class="btn" id="btn-variations" disabled>3 Variations</button>
+    <button class="btn" id="btn-saved" style="margin-left:auto" disabled>📁 Saved <span id="saved-count"></span></button>
   </div>
 
   <div class="loading-bar" id="loading"><div class="fill"></div></div>
 
   <div id="output"></div>
+
+  <div id="saved-panel">
+    <div class="saved-header">
+      <h2>📁 Saved Scripts</h2>
+      <button class="back-btn" id="btn-back-to-gen">← Back to Generator</button>
+    </div>
+    <div id="saved-list"></div>
+  </div>
 
   <div class="adjust-bar" id="adjust-bar" style="display:none">
     <input type="text" class="adjust-input" id="adjust-input" placeholder="Adjust: e.g. 'make the punchline edgier' or 'change setting to gym'"/>
@@ -182,6 +210,93 @@ const SB_URL = 'https://jhawboejqoaoqgmkxzfq.supabase.co/rest/v1';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpoYXdib2VqcW9hb3FnbWt4emZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTgwMjcsImV4cCI6MjA4ODkzNDAyN30.4RfTKl-g28BZpVl2_DWLZ_blvXWosSdn-5J2Sja27hM';
 
 let PIN = '';
+
+// ─── Saved Scripts (localStorage) ───
+function getSavedScripts() {
+  try { return JSON.parse(localStorage.getItem('evora_saved_scripts') || '[]'); } catch(e) { return []; }
+}
+function setSavedScripts(arr) {
+  localStorage.setItem('evora_saved_scripts', JSON.stringify(arr));
+  updateSavedCount();
+}
+function updateSavedCount() {
+  const n = getSavedScripts().length;
+  document.getElementById('saved-count').textContent = n > 0 ? `(${n})` : '';
+}
+function saveScript(scriptObj) {
+  const saved = getSavedScripts();
+  saved.unshift({
+    ...scriptObj,
+    savedAt: new Date().toISOString(),
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6)
+  });
+  setSavedScripts(saved);
+}
+function deleteScript(id) {
+  setSavedScripts(getSavedScripts().filter(s => s.id !== id));
+}
+function showSavedPanel() {
+  document.getElementById('output').style.display = 'none';
+  document.getElementById('adjust-bar').style.display = 'none';
+  document.getElementById('saved-panel').classList.add('active');
+  renderSavedList();
+}
+function hideSavedPanel() {
+  document.getElementById('saved-panel').classList.remove('active');
+  document.getElementById('output').style.display = '';
+}
+function renderSavedList() {
+  const saved = getSavedScripts();
+  const list = document.getElementById('saved-list');
+  if (!saved.length) {
+    list.innerHTML = '<div class="saved-empty">No saved scripts yet. Generate a script and hit 💾 Save to keep it.</div>';
+    return;
+  }
+  let html = '';
+  for (const s of saved) {
+    const date = new Date(s.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const confColor = s.confidence === 'winner' ? 'badge-green' : s.confidence === 'strong' ? 'badge-blue' : 'badge-orange';
+    
+    // Render full card
+    const beatKeys = Object.keys(s.full_script || {}).sort();
+    let beats = '';
+    for (const bk of beatKeys) {
+      const b = s.full_script[bk];
+      beats += `<div class="beat"><div class="beat-time">${escHtml(b.timestamp || bk)}</div><div class="beat-row">`;
+      if (b.visual) beats += `<div class="beat-field"><div class="beat-field-label">Visual</div><div class="beat-field-value">${escHtml(b.visual)}</div></div>`;
+      if (b.text_overlay) beats += `<div class="beat-field"><div class="beat-field-label">Text Overlay</div><div class="beat-field-value text-overlay">${escHtml(b.text_overlay)}</div></div>`;
+      if (b.dialogue) beats += `<div class="beat-field"><div class="beat-field-label">Dialogue</div><div class="beat-field-value dialogue">${escHtml(b.dialogue)}</div></div>`;
+      if (b.audio) beats += `<div class="beat-field"><div class="beat-field-label">Audio</div><div class="beat-field-value">${escHtml(b.audio)}</div></div>`;
+      beats += '</div></div>';
+    }
+    
+    html += `<div class="script-card">
+      <div class="script-header">
+        <span class="script-title">${escHtml(s.title || 'Untitled')}</span>
+        ${s.vertical ? `<span class="badge badge-pink">${escHtml(s.vertical)}</span>` : ''}
+        ${s.confidence ? `<span class="badge ${confColor}">${escHtml(s.confidence)}</span>` : ''}
+        <span style="color:var(--dim);font-size:11px;margin-left:auto">${date}</span>
+      </div>
+      <div class="script-meta">
+        ${s.duration ? `<div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value">${escHtml(s.duration)}</div></div>` : ''}
+        ${s.setup ? `<div class="meta-item"><div class="meta-label">Setup</div><div class="meta-value">${escHtml(s.setup)}</div></div>` : ''}
+        ${s.posting_time ? `<div class="meta-item"><div class="meta-label">Post Time</div><div class="meta-value">${escHtml(s.posting_time)}</div></div>` : ''}
+        ${s.reference_reel ? `<div class="meta-item"><div class="meta-label">Reference</div><div class="meta-value"><a href="${escHtml(s.reference_reel)}" target="_blank" style="color:var(--pink)">Watch →</a></div></div>` : ''}
+      </div>
+      ${beats}
+      <div class="script-footer">
+        ${s.caption ? `<div class="meta-label">Caption</div><div class="caption-text">${escHtml(s.caption)}</div>` : ''}
+        ${s.hashtags?.length ? `<div class="hashtags">${s.hashtags.map(h => `<span class="badge badge-blue">${escHtml(h)}</span>`).join('')}</div>` : ''}
+        ${s.avatar_note ? `<div style="font-size:13px;color:var(--green);margin-bottom:8px">🎯 ${escHtml(s.avatar_note)}</div>` : ''}
+        ${s.why_this_works ? `<div class="why-text">📊 ${escHtml(s.why_this_works)}</div>` : ''}
+      </div>
+      <div class="saved-script-actions">
+        <button class="btn delete-btn" onclick="if(confirm('Delete this script?')){deleteScript('${s.id}');renderSavedList()}">🗑 Delete</button>
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
 let creatorCtx = null;
 let lastOutput = '';
 let lastPrompt = '';
@@ -263,6 +378,8 @@ document.getElementById('creator-select').addEventListener('change', async (e) =
 
     document.getElementById('prompt').disabled = false;
     document.getElementById('btn-generate').disabled = false;
+    document.getElementById('btn-saved').disabled = false;
+    updateSavedCount();
     document.getElementById('prompt').focus();
   } catch (err) {
     statusEl.innerHTML = `<div class="context-badge error">❌ Failed to load: ${err.message}</div>`;
@@ -379,9 +496,11 @@ async function callEdgeFunction(action, adjustFeedback) {
   }
 }
 
-document.getElementById('btn-generate').addEventListener('click', () => callEdgeFunction('generate'));
-document.getElementById('btn-regenerate').addEventListener('click', () => callEdgeFunction('generate'));
-document.getElementById('btn-variations').addEventListener('click', () => callEdgeFunction('variations'));
+document.getElementById('btn-generate').addEventListener('click', () => { hideSavedPanel(); callEdgeFunction('generate'); });
+document.getElementById('btn-regenerate').addEventListener('click', () => { hideSavedPanel(); callEdgeFunction('generate'); });
+document.getElementById('btn-variations').addEventListener('click', () => { hideSavedPanel(); callEdgeFunction('variations'); });
+document.getElementById('btn-saved').addEventListener('click', showSavedPanel);
+document.getElementById('btn-back-to-gen').addEventListener('click', hideSavedPanel);
 document.getElementById('btn-adjust').addEventListener('click', () => {
   const feedback = document.getElementById('adjust-input').value.trim();
   if (feedback) callEdgeFunction('adjust', feedback);
@@ -479,13 +598,28 @@ function tryParseScriptJSON(text) {
 }
 
 // Render scripts
+let lastParsedScripts = [];
+
+window.saveFromCard = function(btn) {
+  const idx = parseInt(btn.dataset.idx);
+  const s = lastParsedScripts[idx];
+  if (!s) return;
+  saveScript(s);
+  btn.textContent = '✅ Saved';
+  btn.classList.add('saved');
+  btn.onclick = null;
+};
+
 function renderScripts(data) {
   const output = document.getElementById('output');
   const scripts = data.scripts || [data];
+  lastParsedScripts = scripts;
   let html = '';
 
   for (const s of scripts) {
+    const scriptIdx = scripts.indexOf(s);
     html += '<div class="script-card">';
+    html += `<button class="save-btn" data-idx="${scriptIdx}" onclick="saveFromCard(this)">💾 Save</button>`;
 
     // Header
     html += '<div class="script-header">';
