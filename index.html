@@ -311,22 +311,24 @@ async function callEdgeFunction(action, adjustFeedback) {
       return;
     }
 
-    // Stream SSE
+    // Stream SSE — buffer incomplete lines across chunks
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let fullText = '';
+    let sseBuffer = '';
     const streamEl = document.getElementById('stream-output');
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
+      sseBuffer += decoder.decode(value, { stream: true });
+      const lines = sseBuffer.split('\n');
+      sseBuffer = lines.pop() || ''; // keep incomplete last line in buffer
 
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
+        const data = line.slice(6).trim();
         if (data === '[DONE]') continue;
         try {
           const event = JSON.parse(data);
@@ -349,14 +351,19 @@ async function callEdgeFunction(action, adjustFeedback) {
 
     lastOutput = fullText;
 
-    // Try to parse as JSON and render structured cards
-    const parsed = tryParseScriptJSON(fullText);
+    // Try to parse — direct first, then with cleanup
+    let parsed = null;
+    try { 
+      const trimmed = fullText.trim().replace(/^```json\s*/i,'').replace(/```\s*$/,'').trim();
+      parsed = JSON.parse(trimmed);
+      if (!parsed.scripts && !parsed.title) parsed = null;
+    } catch(e) {}
+    if (!parsed) parsed = tryParseScriptJSON(fullText);
+
     if (parsed) {
       renderScripts(parsed);
     } else {
-      // Show raw but add a note about parse failure
-      console.error('JSON parse failed. First 200 chars:', fullText.slice(0, 200));
-      console.error('Last 200 chars:', fullText.slice(-200));
+      console.error('JSON parse failed. Length:', fullText.length, 'First 200:', fullText.slice(0, 200));
       output.innerHTML = `<div class="raw-output">${escHtml(fullText)}</div>`;
     }
 
