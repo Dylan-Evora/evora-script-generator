@@ -398,10 +398,16 @@ document.getElementById('adjust-input').addEventListener('keydown', (e) => {
 function tryParseScriptJSON(text) {
   if (!text) return null;
   
-  // Strip markdown code fences first
+  // Strip markdown code fences (closed or unclosed)
   let cleaned = text.trim();
-  const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenceMatch) cleaned = fenceMatch[1].trim();
+  const fenceClosed = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceClosed) {
+    cleaned = fenceClosed[1].trim();
+  } else {
+    // Unclosed fence — strip opening ``` line
+    const fenceOpen = cleaned.match(/^```(?:json)?\s*\n?([\s\S]*)$/);
+    if (fenceOpen) cleaned = fenceOpen[1].trim();
+  }
 
   const strategies = [
     // 1. Direct parse
