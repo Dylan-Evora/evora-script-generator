@@ -139,6 +139,7 @@ Examples:
     <button class="btn btn-primary" id="btn-generate" disabled>Generate</button>
     <button class="btn" id="btn-regenerate" disabled>Regenerate</button>
     <button class="btn" id="btn-variations" disabled>3 Variations</button>
+    <button class="btn" id="btn-paste-json" style="margin-left:auto">📋 Paste JSON</button>
   </div>
 
   <div class="loading-bar" id="loading"><div class="fill"></div></div>
@@ -350,6 +351,20 @@ document.getElementById('prompt').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
     e.preventDefault();
     callEdgeFunction('generate');
+  }
+});
+
+// Paste JSON button
+document.getElementById('btn-paste-json').addEventListener('click', () => {
+  const jsonStr = window.prompt('Paste script JSON:');
+  if (!jsonStr) return;
+  const parsed = tryParseScriptJSON(jsonStr);
+  if (parsed) {
+    renderScripts(parsed);
+    document.getElementById('adjust-bar').style.display = 'flex';
+    lastOutput = jsonStr;
+  } else {
+    document.getElementById('output').innerHTML = '<div class="raw-output" style="color:var(--red)">Could not parse JSON. Make sure it\'s valid.</div>';
   }
 });
 
