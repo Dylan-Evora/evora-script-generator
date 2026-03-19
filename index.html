@@ -4,6 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Evora — Script Generator</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -394,91 +397,77 @@ document.getElementById('adjust-input').addEventListener('keydown', (e) => {
   }
 });
 
-// Extract JSON from Opus output (handles fences, extra text, etc.)
+// Extract JSON from Opus output — strip everything that isn't JSON, then parse
 function tryParseScriptJSON(text) {
   if (!text) return null;
-  
-  // Strip markdown code fences (closed or unclosed)
-  let cleaned = text.trim();
-  const fenceClosed = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenceClosed) {
-    cleaned = fenceClosed[1].trim();
-  } else {
-    // Unclosed fence — strip opening ``` line
-    const fenceOpen = cleaned.match(/^```(?:json)?\s*\n?([\s\S]*)$/);
-    if (fenceOpen) cleaned = fenceOpen[1].trim();
-  }
+  let s = text;
 
-  const strategies = [
-    // 1. Direct parse
-    () => JSON.parse(cleaned),
-    // 2. First { to last }
-    () => {
-      const start = cleaned.indexOf('{');
-      const end = cleaned.lastIndexOf('}');
-      if (start >= 0 && end > start) return JSON.parse(cleaned.slice(start, end + 1));
-      return null;
-    },
-    // 3. First [ to last ]
-    () => {
-      const start = cleaned.indexOf('[');
-      const end = cleaned.lastIndexOf(']');
-      if (start >= 0 && end > start) return { scripts: JSON.parse(cleaned.slice(start, end + 1)) };
-      return null;
-    },
-    // 4. Repair common JSON errors: trailing commas, unescaped newlines
-    () => {
-      let s = cleaned;
-      const start = s.indexOf('{');
-      const end = s.lastIndexOf('}');
-      if (start < 0 || end <= start) return null;
-      s = s.slice(start, end + 1);
-      // Remove trailing commas before } or ]
-      s = s.replace(/,\s*([}\]])/g, '$1');
-      // Fix unescaped newlines in strings (common with LLM output)
-      s = s.replace(/:\s*"((?:[^"\\]|\\.)*)"/g, (match) => {
-        return match.replace(/\n/g, '\\n');
-      });
-      return JSON.parse(s);
-    },
-    // 5. Find individual script objects if wrapper is broken
-    () => {
-      const scripts = [];
-      const re = /\{[^{}]*"title"\s*:\s*"[^"]*"[^{}]*"full_script"\s*:\s*\{[\s\S]*?\}\s*\}/g;
-      // Greedy approach: find "title" markers and parse each block
-      const titlePositions = [];
-      let idx = 0;
-      while ((idx = cleaned.indexOf('"title"', idx)) !== -1) {
-        // Walk back to find opening {
-        let bracePos = cleaned.lastIndexOf('{', idx);
-        if (bracePos >= 0) titlePositions.push(bracePos);
-        idx++;
-      }
-      for (let i = 0; i < titlePositions.length; i++) {
-        const startPos = titlePositions[i];
-        // Find matching closing brace
-        let depth = 0;
-        for (let j = startPos; j < cleaned.length; j++) {
-          if (cleaned[j] === '{') depth++;
-          else if (cleaned[j] === '}') { depth--; if (depth === 0) {
-            try {
-              let block = cleaned.slice(startPos, j + 1).replace(/,\s*([}\]])/g, '$1');
-              scripts.push(JSON.parse(block));
-            } catch (e) {}
-            break;
-          }}
-        }
-      }
-      return scripts.length ? { scripts } : null;
+  // Step 1: strip ALL markdown fences (open, closed, nested)
+  s = s.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+  s = s.trim();
+
+  // Step 2: find the outermost JSON object
+  const firstBrace = s.indexOf('{');
+  const lastBrace = s.lastIndexOf('}');
+  if (firstBrace < 0 || lastBrace <= firstBrace) return null;
+  s = s.slice(firstBrace, lastBrace + 1);
+
+  // Step 3: fix trailing commas (,} or ,])
+  s = s.replace(/,(\s*[}\]])/g, '$1');
+
+  // Step 4: try parse
+  try { 
+    const r = JSON.parse(s);
+    if (r.scripts || r.title) return r;
+  } catch(e) { console.error('Parse attempt 1 failed:', e.message); }
+
+  // Step 5: if that failed, try to fix unescaped control chars inside string values
+  try {
+    // Replace actual newlines/tabs inside JSON strings
+    let fixed = '';
+    let inStr = false, escaped = false;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (escaped) { fixed += c; escaped = false; continue; }
+      if (c === '\\') { fixed += c; escaped = true; continue; }
+      if (c === '"') { inStr = !inStr; fixed += c; continue; }
+      if (inStr && c === '\n') { fixed += '\\n'; continue; }
+      if (inStr && c === '\r') { fixed += '\\r'; continue; }
+      if (inStr && c === '\t') { fixed += '\\t'; continue; }
+      fixed += c;
     }
-  ];
+    const r2 = JSON.parse(fixed);
+    if (r2.scripts || r2.title) return r2;
+  } catch(e) { console.error('Parse attempt 2 failed:', e.message); }
 
-  for (const strategy of strategies) {
-    try {
-      const result = strategy();
-      if (result && (result.scripts || result.title || result.full_script)) return result;
-    } catch (e) {}
-  }
+  // Step 6: nuclear option — extract each script object by brace matching
+  try {
+    const scripts = [];
+    let i = 0;
+    while (i < s.length) {
+      const titleIdx = s.indexOf('"title"', i);
+      if (titleIdx < 0) break;
+      // Walk back to opening brace
+      let start = titleIdx;
+      while (start > 0 && s[start] !== '{') start--;
+      if (s[start] !== '{') { i = titleIdx + 1; continue; }
+      // Brace-match forward
+      let depth = 0, end = start;
+      for (let j = start; j < s.length; j++) {
+        if (s[j] === '{') depth++;
+        if (s[j] === '}') { depth--; if (depth === 0) { end = j; break; } }
+      }
+      if (end > start) {
+        try {
+          let block = s.slice(start, end + 1).replace(/,(\s*[}\]])/g, '$1');
+          scripts.push(JSON.parse(block));
+        } catch(e) {}
+      }
+      i = end + 1;
+    }
+    if (scripts.length) return { scripts };
+  } catch(e) { console.error('Parse attempt 3 failed:', e.message); }
+
   return null;
 }
 
