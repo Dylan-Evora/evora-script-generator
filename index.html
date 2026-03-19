@@ -316,15 +316,12 @@ async function callEdgeFunction(action, adjustFeedback) {
 
     lastOutput = fullText;
 
-    // Try to parse as JSON and render structured
-    try {
-      let jsonStr = fullText.trim();
-      if (jsonStr.includes('```json')) jsonStr = jsonStr.split('```json')[1].split('```')[0];
-      else if (jsonStr.includes('```')) jsonStr = jsonStr.split('```')[1].split('```')[0];
-      const parsed = JSON.parse(jsonStr.trim());
+    // Try to parse as JSON and render structured cards
+    const parsed = tryParseScriptJSON(fullText);
+    if (parsed) {
       renderScripts(parsed);
-    } catch (e) {
-      // Not JSON — show as raw text (conversational response)
+    } else {
+      // Not JSON — show as formatted text (conversational response)
       output.innerHTML = `<div class="raw-output">${escHtml(fullText)}</div>`;
     }
 
@@ -364,6 +361,52 @@ document.getElementById('adjust-input').addEventListener('keydown', (e) => {
     if (feedback) callEdgeFunction('adjust', feedback);
   }
 });
+
+// Extract JSON from Opus output (handles fences, extra text, etc.)
+function tryParseScriptJSON(text) {
+  if (!text) return null;
+  
+  // Try these extraction strategies in order
+  const strategies = [
+    // 1. Direct parse
+    () => JSON.parse(text.trim()),
+    // 2. Extract from ```json ... ```
+    () => {
+      const m = text.match(/```json\s*([\s\S]*?)```/);
+      return m ? JSON.parse(m[1].trim()) : null;
+    },
+    // 3. Extract from ``` ... ```
+    () => {
+      const m = text.match(/```\s*([\s\S]*?)```/);
+      return m ? JSON.parse(m[1].trim()) : null;
+    },
+    // 4. Find first { to last }
+    () => {
+      const start = text.indexOf('{');
+      const end = text.lastIndexOf('}');
+      if (start >= 0 && end > start) return JSON.parse(text.slice(start, end + 1));
+      return null;
+    },
+    // 5. Find first [ to last ]
+    () => {
+      const start = text.indexOf('[');
+      const end = text.lastIndexOf(']');
+      if (start >= 0 && end > start) {
+        const arr = JSON.parse(text.slice(start, end + 1));
+        return { scripts: arr };
+      }
+      return null;
+    },
+  ];
+
+  for (const strategy of strategies) {
+    try {
+      const result = strategy();
+      if (result && (result.scripts || result.title || result.full_script)) return result;
+    } catch (e) {}
+  }
+  return null;
+}
 
 // Render scripts
 function renderScripts(data) {
