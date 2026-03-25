@@ -413,7 +413,7 @@ async function callEdgeFunction(action, adjustFeedback) {
   try {
     const resp = await fetch(EDGE_FN, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-pin': PIN },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SB_KEY}`, 'apikey': SB_KEY, 'x-pin': PIN },
       body: JSON.stringify({
         handle: creatorCtx.handle,
         prompt: action === 'adjust' ? `ADJUSTMENT: ${userPrompt}\n\nOriginal prompt: ${lastPrompt}` : userPrompt,
