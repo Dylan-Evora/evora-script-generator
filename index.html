@@ -126,6 +126,32 @@
     .delete-btn { color: var(--red); border-color: rgba(255,68,68,0.3); }
     .delete-btn:hover { background: var(--red-dim); }
 
+    /* Data Sources Panel */
+    .ds-panel { margin-bottom: 16px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .ds-toggle { width: 100%; background: var(--surface); border: none; color: var(--text); padding: 12px 16px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .ds-toggle:hover { background: var(--surface2); }
+    .ds-toggle-icon { font-size: 10px; color: var(--dim); transition: transform 0.2s; }
+    .ds-toggle-icon.open { transform: rotate(90deg); }
+    .ds-body { padding: 12px 16px; background: var(--surface2); border-top: 1px solid var(--border); display: none; }
+    .ds-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .ds-always-on { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); }
+    .ds-always-on input { opacity: 0.4; cursor: not-allowed; }
+    .ds-always-label { font-size: 11px; color: var(--faint); }
+    .ds-select-all { background: none; border: 1px solid var(--border); color: var(--dim); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .ds-select-all:hover { border-color: var(--pink); color: var(--text); }
+    .ds-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+    .ds-item label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+    .ds-item input[type=checkbox] { accent-color: var(--pink); width: 14px; height: 14px; cursor: pointer; }
+    .ds-expand-btn { background: none; border: none; color: var(--dim); font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .ds-expand-btn:hover { background: var(--border); color: var(--text); }
+    .ds-sub { padding: 6px 0 6px 22px; display: flex; flex-direction: column; gap: 6px; }
+    .ds-sub label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); cursor: pointer; }
+    .ds-sub label:hover { color: var(--text); }
+    .ds-sub input[type=checkbox] { accent-color: var(--pink); width: 13px; height: 13px; cursor: pointer; }
+    .ds-sub-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); }
+    .ds-select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 4px 8px; font-size: 12px; font-family: inherit; outline: none; cursor: pointer; }
+    .ds-select:focus { border-color: var(--pink); }
+
     /* Mobile */
     @media (max-width: 600px) {
       #app { padding: 16px 12px; }
@@ -170,6 +196,89 @@
   </div>
 
   <div id="context-status"></div>
+
+  <!-- Data Sources Panel -->
+  <div class="ds-panel" id="data-sources-panel">
+    <button class="ds-toggle" id="ds-toggle" onclick="toggleDataSources()">
+      <span>⚙️ Data Sources</span>
+      <span class="ds-toggle-icon" id="ds-toggle-icon">▶</span>
+    </button>
+    <div class="ds-body" id="ds-body">
+      <div class="ds-header-row">
+        <label class="ds-always-on">
+          <input type="checkbox" checked disabled> Creator Identity
+          <span class="ds-always-label">(always on)</span>
+        </label>
+        <button class="ds-select-all" id="ds-select-all" onclick="toggleAllDataSources()">Deselect All</button>
+      </div>
+
+      <!-- OF Intelligence -->
+      <div class="ds-item">
+        <label><input type="checkbox" id="ds-ofIntelligence" checked onchange="updateDSSelectAll()"> OF Intelligence</label>
+        <button class="ds-expand-btn" onclick="toggleDSExpand('of-expand')" title="Expand options">▾</button>
+      </div>
+      <div class="ds-sub" id="of-expand" style="display:none">
+        <label><input type="checkbox" id="ds-of-archetypes" checked> Archetypes</label>
+        <label><input type="checkbox" id="ds-of-spenderPersonas" checked> Spender Personas</label>
+        <label><input type="checkbox" id="ds-of-fanInterests" checked> Fan Interests</label>
+      </div>
+
+      <!-- Content Performance -->
+      <div class="ds-item">
+        <label><input type="checkbox" id="ds-contentPerformance" checked onchange="updateDSSelectAll()"> Content Performance</label>
+        <button class="ds-expand-btn" onclick="toggleDSExpand('cp-expand')" title="Expand options">▾</button>
+      </div>
+      <div class="ds-sub" id="cp-expand" style="display:none">
+        <label><input type="checkbox" id="ds-cp-provenFormulas" checked> Proven Formulas</label>
+        <label><input type="checkbox" id="ds-cp-deadFormats" checked> Dead Formats</label>
+        <label><input type="checkbox" id="ds-cp-antiPatterns" checked> Anti-Patterns</label>
+        <label><input type="checkbox" id="ds-cp-commentIntelligence" checked> Comment Intelligence</label>
+      </div>
+
+      <!-- Video Library -->
+      <div class="ds-item">
+        <label><input type="checkbox" id="ds-videoLibrary" checked onchange="updateDSSelectAll()"> Video Library</label>
+        <button class="ds-expand-btn" onclick="toggleDSExpand('vl-expand')" title="Expand options">▾</button>
+      </div>
+      <div class="ds-sub" id="vl-expand" style="display:none">
+        <div class="ds-sub-row">
+          <span>Filter:</span>
+          <select id="ds-vl-filter" class="ds-select">
+            <option value="all">All</option>
+            <option value="top20">Top 20</option>
+            <option value="top50">Top 50</option>
+          </select>
+        </div>
+        <label><input type="checkbox" id="ds-vl-transcripts" checked> Include Transcripts</label>
+        <label><input type="checkbox" id="ds-vl-comments" checked> Include Comments</label>
+      </div>
+
+      <!-- Reel Insights -->
+      <div class="ds-item">
+        <label><input type="checkbox" id="ds-reelInsights" checked onchange="updateDSSelectAll()"> Reel Insights</label>
+      </div>
+
+      <!-- Market Research -->
+      <div class="ds-item">
+        <label><input type="checkbox" id="ds-marketResearch" checked onchange="updateDSSelectAll()"> Market Research</label>
+      </div>
+
+      <!-- Competitor Formulas -->
+      <div class="ds-item">
+        <label><input type="checkbox" id="ds-competitorFormulas" checked onchange="updateDSSelectAll()"> Competitor Formulas</label>
+        <button class="ds-expand-btn" onclick="toggleDSExpand('cf-expand')" title="Expand options">▾</button>
+      </div>
+      <div class="ds-sub" id="cf-expand" style="display:none">
+        <label><input type="checkbox" id="ds-cf-viralPool" checked> Viral Pool</label>
+        <label><input type="checkbox" id="ds-cf-freshFormulas" checked> Fresh Formulas</label>
+      </div>
+
+      <!-- Commenter Demographics -->
+      <div class="ds-item">
+        <label><input type="checkbox" id="ds-commenterDemographics" checked onchange="updateDSSelectAll()"> Commenter Demographics</label>
+      </div>
+    </div>
+  </div>
 
   <textarea id="prompt" class="prompt-area" placeholder="What do you want to create?
 
@@ -297,6 +406,95 @@ function renderSavedList() {
   }
   list.innerHTML = html;
 }
+// ─── Data Sources Panel ───
+function toggleDataSources() {
+  const body = document.getElementById('ds-body');
+  const icon = document.getElementById('ds-toggle-icon');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  icon.classList.toggle('open', !isOpen);
+}
+
+function toggleDSExpand(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display !== 'none' ? 'none' : 'block';
+}
+
+let dsAllSelected = true;
+function toggleAllDataSources() {
+  dsAllSelected = !dsAllSelected;
+  const ids = ['ds-ofIntelligence','ds-contentPerformance','ds-videoLibrary','ds-reelInsights','ds-marketResearch','ds-competitorFormulas','ds-commenterDemographics'];
+  for (const id of ids) document.getElementById(id).checked = dsAllSelected;
+  document.getElementById('ds-select-all').textContent = dsAllSelected ? 'Deselect All' : 'Select All';
+}
+
+function updateDSSelectAll() {
+  const ids = ['ds-ofIntelligence','ds-contentPerformance','ds-videoLibrary','ds-reelInsights','ds-marketResearch','ds-competitorFormulas','ds-commenterDemographics'];
+  const allChecked = ids.every(id => document.getElementById(id).checked);
+  dsAllSelected = allChecked;
+  document.getElementById('ds-select-all').textContent = allChecked ? 'Deselect All' : 'Select All';
+}
+
+function buildDataSources() {
+  const ds = { identity: true };
+
+  // OF Intelligence
+  const ofOn = document.getElementById('ds-ofIntelligence').checked;
+  if (ofOn) {
+    const inc = [];
+    if (document.getElementById('ds-of-archetypes').checked) inc.push('archetypes');
+    if (document.getElementById('ds-of-spenderPersonas').checked) inc.push('spenderPersonas');
+    if (document.getElementById('ds-of-fanInterests').checked) inc.push('fanInterests');
+    ds.ofIntelligence = inc.length === 3 ? { enabled: true } : { enabled: true, include: inc };
+  } else {
+    ds.ofIntelligence = false;
+  }
+
+  // Content Performance
+  const cpOn = document.getElementById('ds-contentPerformance').checked;
+  if (cpOn) {
+    const inc = [];
+    if (document.getElementById('ds-cp-provenFormulas').checked) inc.push('provenFormulas');
+    if (document.getElementById('ds-cp-deadFormats').checked) inc.push('deadFormats');
+    if (document.getElementById('ds-cp-antiPatterns').checked) inc.push('antiPatterns');
+    if (document.getElementById('ds-cp-commentIntelligence').checked) inc.push('commentIntelligence');
+    ds.contentPerformance = inc.length === 4 ? { enabled: true } : { enabled: true, include: inc };
+  } else {
+    ds.contentPerformance = false;
+  }
+
+  // Video Library
+  const vlOn = document.getElementById('ds-videoLibrary').checked;
+  if (vlOn) {
+    ds.videoLibrary = {
+      enabled: true,
+      filter: document.getElementById('ds-vl-filter').value,
+      includeTranscripts: document.getElementById('ds-vl-transcripts').checked,
+      includeComments: document.getElementById('ds-vl-comments').checked,
+    };
+  } else {
+    ds.videoLibrary = false;
+  }
+
+  ds.reelInsights = document.getElementById('ds-reelInsights').checked;
+  ds.marketResearch = document.getElementById('ds-marketResearch').checked;
+
+  // Competitor Formulas
+  const cfOn = document.getElementById('ds-competitorFormulas').checked;
+  if (cfOn) {
+    const inc = [];
+    if (document.getElementById('ds-cf-viralPool').checked) inc.push('viralPool');
+    if (document.getElementById('ds-cf-freshFormulas').checked) inc.push('freshFormulas');
+    ds.competitorFormulas = inc.length === 2 ? { enabled: true } : { enabled: true, include: inc };
+  } else {
+    ds.competitorFormulas = false;
+  }
+
+  ds.commenterDemographics = document.getElementById('ds-commenterDemographics').checked;
+
+  return ds;
+}
+
 let creatorCtx = null;
 let lastOutput = '';
 let lastPrompt = '';
@@ -419,6 +617,7 @@ async function callEdgeFunction(action, adjustFeedback) {
         prompt: action === 'adjust' ? `ADJUSTMENT: ${userPrompt}\n\nOriginal prompt: ${lastPrompt}` : userPrompt,
         action,
         previousOutput: action === 'adjust' ? lastOutput : undefined,
+        dataSources: buildDataSources(),
       }),
     });
 
